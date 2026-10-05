@@ -1,7 +1,7 @@
 import asyncio
 import re
 import sqlite3
-from pyrogram import Client, filters
+from pyrogram import Client, filters, idle
 from pyrogram.types import Message
 from pyrogram.errors import FloodWait
 
@@ -9,7 +9,7 @@ from pyrogram.errors import FloodWait
 API_ID = 12345678          # my.telegram.org se lein
 API_HASH = "YOUR_API_HASH"  # my.telegram.org se lein
 BOT_TOKEN = "YOUR_BOT_TOKEN" # @BotFather se lein
-OWNER_ID = 123456789       # Apna Telegram User ID yahan dalein
+OWNER_ID = 123456789       # Apna Numeric Telegram User ID yahan dalein
 
 # Auto Delete Time (Seconds me). Example: 60 = 1 minute, 300 = 5 minutes
 AUTO_DELETE_TIME = 60  
@@ -35,9 +35,9 @@ def get_all_groups():
 
 app = Client("BioProtectBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
-# Regex (Links aur @channel usernames detect karne ke liye)
+# Regex Pattern (Links aur @channel usernames detect karne ke liye)
 LINK_PATTERN = re.compile(
-    r'(https?://\S+|t\.me/\S+|telegram\.me/\S+|@[a-zA-Z0-9_]+|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})',
+    r'(https?://\S+|t\.me/\S+|telegram\.me/\S+|@[a-zA-Z0-9_]+|\b[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b)',
     re.IGNORECASE
 )
 
@@ -91,17 +91,17 @@ async def delete_after_delay(message: Message, delay: int):
 
 # --- 2. OWNER ONLY COMMANDS ---
 
-# Settings 1: Check Total Groups Count (/stats)
+# Setting 1: Check Total Groups Count (/stats)
 @app.on_message(filters.command("stats") & filters.private)
 async def stats_command(client: Client, message: Message):
     if message.from_user.id != OWNER_ID:
-        return  # Kisi aur ko response nahi milega
+        return  # Non-owner ko response nahi milega
 
     groups = get_all_groups()
     await message.reply_text(f"📊 **Bot Status:**\n\nBot abhi **{len(groups)}** groups me added hai.")
 
 
-# Settings 2: Broadcast Message/Link to All Groups (/broadcast)
+# Setting 2: Broadcast Message/Link to All Groups (/broadcast)
 @app.on_message(filters.command("broadcast") & filters.private)
 async def broadcast_command(client: Client, message: Message):
     if message.from_user.id != OWNER_ID:
@@ -135,7 +135,14 @@ async def broadcast_command(client: Client, message: Message):
     await status_msg.edit_text(f"✅ **Broadcast Done!**\n\n• **Success:** {success} groups\n• **Failed:** {failed} groups")
 
 
-# Start the Bot
-if __name__ == "__main__":
+# Main Event Loop Startup Function
+async def main():
+    await app.start()
     print("Bot chalu ho gaya hai...")
-    app.run()
+    await idle()
+    await app.stop()
+
+# Execution Entry Point
+if __name__ == "__main__":
+    loop = asyncio.get_event_loop_policy().get_event_loop()
+    loop.run_until_complete(main())
